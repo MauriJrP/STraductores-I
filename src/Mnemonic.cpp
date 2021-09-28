@@ -13,25 +13,6 @@ Mnemonic::~Mnemonic()
 {
 }
 
-std::string Mnemonic::octToHex(std::string num)
-{
-  int intNum = stoi(num, 0, 8);
-  return decToHex(to_string(intNum));
-}
-
-std::string Mnemonic::binToHex(std::string num)
-{
-  int intNum = stoi(num, 0, 2);
-  return decToHex(to_string(intNum));
-}
-
-std::string Mnemonic::decToHex(std::string num)
-{
-  stringstream result;
-  result << hex << stoi(num);
-  return result.str();
-}
-
 std::string Mnemonic::getHexOpr(std::string opr)
 {
   string imm = "";
@@ -41,9 +22,9 @@ std::string Mnemonic::getHexOpr(std::string opr)
   }
 
   if (opr[0] == '$') return imm + opr;
-  else if (opr[0] == '@') opr = '$' + octToHex(opr);
-  else if (opr[0] == '%') opr = '$' + binToHex(opr);
-  else opr = '$' + decToHex(opr);
+  else if (opr[0] == '@') opr = '$' + nSystems.octToHex(opr);
+  else if (opr[0] == '%') opr = '$' + nSystems.binToHex(opr);
+  else opr = '$' + nSystems.decToHex(opr);
 
   return imm + opr;
 }

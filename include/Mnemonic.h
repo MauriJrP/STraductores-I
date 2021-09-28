@@ -5,21 +5,18 @@
 #include <sstream>
 #include <unordered_map>
 
-// using namespace std;
+#include "./NSystems.h"
 
 class Mnemonic
 {
-private:
-  // std::string sourceForm;
+  private:
   std::unordered_map<std::string, std::string> addressModes; // addressMode | objectCode
-public:
+  NSystems nSystems;
+
+  public:
   Mnemonic();
   Mnemonic(std::unordered_map<std::string, std::string>);
   ~Mnemonic();
-
-  std::string octToHex(std::string);
-  std::string binToHex(std::string);
-  std::string decToHex(std::string);
 
   std::string getHexOpr(std::string);
 

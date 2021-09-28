@@ -4,32 +4,18 @@
 #include <unordered_map>
 
 #include "../include/Mnemonic.h"
+#include "../include/NSystems.h"
+#include "../include/FileManager.h"
 
 using namespace std;
 
-void createFile(string fileName) {
-  fstream file;
 
-  file.open(fileName, ios::out);
-  if (!file.is_open())
-  {
-    //Error al abrir el archivo
-    file.open(fileName, ios::out);
-
-    if (!file.good())
-    {
-      //Error al crear el archivo
-    }
-    else
-    {
-      file.close();
-    }
-  }
-  file.close();
-}
 
 int main(int argc, char const* argv[])
 {
+  Mnemonic mnemonicBuffer = Mnemonic();
+  FileManager myFileManager;
+
   ifstream iFile;
   fstream file;
 
@@ -42,11 +28,9 @@ int main(int argc, char const* argv[])
   int instructionLength;
   int intBuffer;
 
-  int constexpr begin = 16384; // 16384 = 40
+  int constexpr begin = 16384; // 16384 = 4000
   int address = begin;
   unordered_map < string, Mnemonic > mnemonics; //Source Form | mnemonic
-
-  Mnemonic mnemonicBuffer = Mnemonic();
 
   //ABA
   mnemonicBuffer.addAddressMode("INH", "18 06");
@@ -119,17 +103,17 @@ int main(int argc, char const* argv[])
 
 
 
-  do {
-    cout << "Nombre del archivo: ";
-    cin >> iFileName;
-    iFile.open(iFileName, ios::in);
-  } while (!iFile.is_open());
-  // iFileName = "x.asm";
-  // iFile.open(iFileName, ios::in);
+  // do {
+  //   cout << "Nombre del archivo: ";
+  //   cin >> iFileName;
+  //   iFile.open(iFileName, ios::in);
+  // } while (!iFile.is_open());
+  iFileName = "x.asm";
+  iFile.open(iFileName, ios::in);
 
 
   fileName = iFileName.substr(0, iFileName.find(".")) + ".lst";
-  createFile(fileName);
+  myFileManager.createFile(fileName);
   file.open(fileName, ios::in | ios::out);
 
   getline(iFile, stringBuffer); // ORG instruction
