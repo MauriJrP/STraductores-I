@@ -5,9 +5,9 @@
 
 class FileManager
 {
-  private:
+private:
 
-  public:
+public:
   FileManager();
   ~FileManager();
 

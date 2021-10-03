@@ -1,19 +1,19 @@
-#include "../include/Mnemonic.h"
+#include "../include/MnemAModes.h"
 
 using namespace std;
 
-Mnemonic::Mnemonic()
+MnemAModes::MnemAModes() : Mnemonic("")
 {
 }
 
-Mnemonic::Mnemonic(std::unordered_map<std::string, std::string> am) : addressModes(am)
+MnemAModes::MnemAModes(std::string n, std::unordered_map<std::string, std::string> am) : Mnemonic(n), addressModes(am)
 {}
 
-Mnemonic::~Mnemonic()
+MnemAModes::~MnemAModes()
 {
 }
 
-std::string Mnemonic::getHexOpr(std::string opr)
+std::string MnemAModes::getHexOpr(std::string opr)
 {
   string imm = "";
   if (opr[0] == '#') {
@@ -29,7 +29,12 @@ std::string Mnemonic::getHexOpr(std::string opr)
   return imm + opr;
 }
 
-std::string Mnemonic::getAddressMode(std::string opr)
+std::string MnemAModes::getAddressMode()
+{
+  return addressModes.begin()->first;
+}
+
+std::string MnemAModes::getAddressMode(std::string opr)
 {
   if (opr[0] == '#') return "IMM";
 
@@ -40,7 +45,7 @@ std::string Mnemonic::getAddressMode(std::string opr)
   // else return "Error";
 }
 
-int Mnemonic::getInstructionLenght(string am)
+int MnemAModes::getInstructionLenght(string am)
 {
   int count{ 1 };
   string objectCode = (am == "") ? addressModes.begin()->second : addressModes[am];
@@ -52,12 +57,28 @@ int Mnemonic::getInstructionLenght(string am)
   return count;
 }
 
-void Mnemonic::addAddressMode(std::string am, std::string oc)
+std::string MnemAModes::getMnenonicName()
+{
+  return Mnemonic;
+}
+
+std::string MnemAModes::getObjectCode(std::string am)
+{
+  return addressModes[am];
+}
+
+void MnemAModes::setMnemonicName(std::string n)
+{
+  Mnemonic = n;
+}
+
+void MnemAModes::addAddressMode(std::string am, std::string oc)
 {
   addressModes[am] = oc;
 }
 
-void Mnemonic::clear()
+void MnemAModes::clear()
 {
+  Mnemonic = "";
   addressModes.clear();
 }

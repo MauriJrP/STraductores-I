@@ -6,15 +6,16 @@
 
 class NSystems
 {
-  private:
+private:
 
-  public:
+public:
   NSystems();
   ~NSystems();
 
   std::string octToHex(std::string);
   std::string binToHex(std::string);
   std::string decToHex(std::string);
+  int hexToDec(std::string);
 
 
 };

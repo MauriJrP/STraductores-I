@@ -29,3 +29,8 @@ std::string NSystems::decToHex(std::string num)
   return result.str();
 }
 
+int NSystems::hexToDec(std::string n)
+{
+  return stoi(n, 0, 16);
+}
+
