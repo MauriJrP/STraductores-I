@@ -15,6 +15,7 @@ Assembler::Assembler() : address(BEGIN)
   directives.insert("DC.W");
   directives.insert("FCC");
   directives.insert("FCB");
+  loadMnemonics();
 }
 
 Assembler::~Assembler()
@@ -78,14 +79,11 @@ void Assembler::clasifyText(bool& operandFlag, bool& directiveFlag, std::string&
     directive = stringBuffer;
     if (directive == "ORG" || directive == "EQU" || directive == "DC.B" || directive == "DC.W" || directive == "BSZ" || directive == "ZMB" || directive == "FCB" || directive == "FCC" || directive == "FILL") directiveFlag = true;
   }
-  else {
-    label = stringBuffer;
-    // if ()
-  }
+  else label = stringBuffer;
   stringBuffer = "";
 }
 
-void Assembler::resetValues(bool& operandFlag, bool& directiveFlag, std::string& sourceForm, std::string& operand, std::string& directive, std::string& label, std::string& labelValue)
+void Assembler::resetValues(bool& operandFlag, bool& directiveFlag, std::string& sourceForm, std::string& operand, std::string& directive, std::string& label, std::string& labelValue, std::string& operationCode, int& instructionLength)
 {
   operandFlag = false;
   directiveFlag = false;
@@ -94,7 +92,104 @@ void Assembler::resetValues(bool& operandFlag, bool& directiveFlag, std::string&
   directive = "";
   label = "";
   labelValue = "";
+  operationCode = "";
+  instructionLength = 0;
+}
 
+std::string Assembler::dcbDirective(std::string& operand)
+{
+  stringstream operationCode{ "" };
+  int bytes{ 0 };
+  string byte{ "" };
+
+  if (operand.length() == 0) {
+    operationCode << "00 ";
+    bytes = 1;
+  }
+
+  for (int i = 0; i < operand.length(); i++) {
+    if (operand[i] == ',' || i == operand.length() - 1) {
+      if (operand[i] != ',') byte += operand[i];
+      if (byte[0] == '\'') byte = to_string((int)byte[1]);
+      operationCode << setfill('0') << setw(2) << hex << stoi(byte) << " ";
+      byte = "";
+      ++bytes;
+    }
+    else byte += operand[i];
+  }
+  address += bytes;
+  return operationCode.str();
+}
+
+std::string Assembler::dcwDirective(std::string& operand)
+{
+  stringstream operationCode{ "" };
+  stringstream ssBuffer{ "" };
+  int bytes{ 0 };
+  string byte{ "" };
+
+  if (operand.length() == 0) {
+    operationCode << "00 00 ";
+    bytes = 2;
+  }
+
+  for (int i = 0; i < operand.length(); i++) {
+    if (operand[i] == ',' || i == operand.length() - 1) {
+      if (operand[i] != ',') byte += operand[i];
+      if (byte[0] == '\'') byte = to_string((int)byte[1]);
+      ssBuffer.str(string());
+      ssBuffer << setfill('0') << setw(4) << hex << stoi(byte);
+      for (int j = 1; j <= ssBuffer.str().length(); j++) {
+        operationCode << ssBuffer.str()[j - 1];
+        if (j % 2 == 0)
+          operationCode << " ";
+      }
+      byte = "";
+      bytes += 2;
+    }
+    else byte += operand[i];
+  }
+  address += bytes;
+  return operationCode.str();
+}
+
+std::string Assembler::bszDirective(std::string& operand)
+{
+  std::string operationCode{ "" };
+  for (int i = 0; i < stoi(operand); i++) {
+    operationCode += "00 ";
+  }
+  address += stoi(operand);
+  return operationCode;
+}
+
+std::string Assembler::fccDirective(std::string& operand)
+{
+  stringstream operationCode{ "" };
+  int bytes{ 0 };
+  string byte{ "" };
+  for (int i = 0; i < operand.length(); i++) {
+    if (operand[i] != '/') {
+      byte = to_string((int)operand[i]);
+      operationCode << setfill('0') << setw(2) << hex << stoi(byte) << " ";
+      byte = "";
+      ++bytes;
+    }
+  }
+  address += bytes;
+  return operationCode.str();
+}
+
+std::string Assembler::fillDirective(std::string& operand) {
+  stringstream operationCode{ "" };
+  size_t pos{ operand.find(',') };
+  int bytesToFill{ stoi(operand.substr(pos + 1)) };
+  std::string constantValue{ operand.substr(0,pos) };
+  for (int i = 0; i < bytesToFill; i++) {
+    operationCode << setfill('0') << setw(2) << constantValue << " ";
+  }
+  address += bytesToFill;
+  return operationCode.str();
 }
 
 void Assembler::assemble(string iFileName)
@@ -108,6 +203,7 @@ void Assembler::assemble(string iFileName)
   string sourceForm{ "" };
   string operand{ "" };
   string addressMode{ "" };
+  string operationCode{ "" };
   string directive{ "" };
   string label{ "" };
   string labelValue{ "" };
@@ -120,7 +216,6 @@ void Assembler::assemble(string iFileName)
   machineState state{ machineState::normal };
 
   //* -------- ------- ------ ----- Open files ----- ------ ------- --------
-  loadMnemonics();
   iFile.open(iFileName, ios::in);
   if (!iFile.is_open()) throw std::invalid_argument("File doesn't exist");
 
@@ -163,23 +258,32 @@ void Assembler::assemble(string iFileName)
         clasifyText(operandFlag, directiveFlag, stringBuffer, operand, sourceForm, directive, label);
       }
 
-      //* -------- ------- ------ ----- Write To TABSIM file ----- ------ ------- --------
-      if (directive == "EQU") labelValue = operand;
-      else labelValue = to_string(address);
-      if (label != "") tabsimFile << label << " $" << hex << stoi(labelValue) << '\n';
-      // if (label != "") tabsimFile << label << ": " << labelValue << "\n";
-
       //* -------- ------- ------ ----- Write to lst file ----- ------ ------- --------
-      cout << hex << address << " ";
-      if (directive != "") {
-        if (label != "") cout << label << " ";
-        cout << directive << " " << operand;
-      }
-      else if (sourceForm != "")
-        cout << mnemonics[sourceForm].getObjectCode(mnemonics[sourceForm].getAddressMode(operand)) << " " << sourceForm << " " << operand;
-      cout << "\n";
+      file << setfill('0') << setw(4) << hex << address << " ";
+      if (directive != "EQU") labelValue = to_string(address);
 
-      if (sourceForm != "") {
+
+      if (directive != "") {
+        //* -------- ------- ------ ----- Directives ----- ------ ------- --------
+        if (directive == "ORG") address = nSystems.hexToDec(operand.substr(1));
+        else if (directive == "START") address = 0;
+        else if (directive == "EQU") labelValue = operand;
+        else if (directive == "BSZ" || directive == "ZMB") operationCode = bszDirective(operand);
+        else if (directive == "DC.B" || directive == "FCB") operationCode = dcbDirective(operand);
+        else if (directive == "DC.W") operationCode = dcwDirective(operand);
+        else if (directive == "FCC") operationCode = fccDirective(operand);
+        else if (directive == "FILL") operationCode = fillDirective(operand);
+        // else if (directive == "")
+
+        file << operationCode;
+        if (label != "") file << label << " ";
+        file << directive << " " << operand << '\n';
+      }
+      else if (sourceForm != "") {
+        file << mnemonics[sourceForm].getObjectCode(mnemonics[sourceForm].getAddressMode(operand)) << " ";
+        if (label != "") file << label << " ";
+        file << sourceForm << " " << operand << '\n';
+
         if (operand == "") instructionLength = mnemonics[sourceForm].getInstructionLenght();
         else {
           hexOpr = mnemonics[sourceForm].getHexOpr(operand);
@@ -189,15 +293,10 @@ void Assembler::assemble(string iFileName)
         address += instructionLength;
       }
 
-      //* -------- ------- ------ ----- Directives ----- ------ ------- --------
-      if (directive == "ORG") address = nSystems.hexToDec(operand.substr(1));
-      else if (directive == "END") return;
-      else if (directive == "START") address = 0;
-      // else if (directive == "EQU") labelValue = operand;
-
-      resetValues(operandFlag, directiveFlag, sourceForm, operand, directive, label, labelValue);
+      if (label != "" && labelValue != "") tabsimFile << label << " $" << hex << stoi(labelValue) << '\n';
+      if (directive == "END") return;
+      resetValues(operandFlag, directiveFlag, sourceForm, operand, directive, label, labelValue, operationCode, instructionLength);
       break;
-
     default:
       break;
     }
@@ -208,6 +307,3 @@ void Assembler::assemble(string iFileName)
   tabsimFile.close();
   iFile.close();
 }
-
-
-

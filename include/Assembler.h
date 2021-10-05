@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <iomanip> // setfill, setw
 #include <fstream>
 #include <cstring>
 #include <unordered_map>
@@ -15,7 +16,7 @@ constexpr int BEGIN = 0;
 
 class Assembler
 {
-  private:
+private:
 
   MnemAModes mnemonicBuffer = MnemAModes();
   FileManager myFileManager;
@@ -36,14 +37,20 @@ class Assembler
   };
 
   void clasifyText(bool&, bool&, std::string&, std::string&, std::string&, std::string&, std::string&);
-  void resetValues(bool&, bool&, std::string&, std::string&, std::string&, std::string&, std::string&);
+  void resetValues(bool&, bool&, std::string&, std::string&, std::string&, std::string&, std::string&, std::string&, int&);
+
+  std::string dcbDirective(std::string&);
+  std::string dcwDirective(std::string&);
+  std::string bszDirective(std::string&);
+  std::string fccDirective(std::string&);
+  std::string fillDirective(std::string&);
 
   int address;
 
   std::string parseObjectCode(std::string);
   void loadMnemonics();
 
-  public:
+public:
   Assembler();
   ~Assembler();
 
