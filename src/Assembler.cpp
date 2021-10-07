@@ -273,7 +273,6 @@ void Assembler::assemble(string iFileName)
         else if (directive == "DC.W") operationCode = dcwDirective(operand);
         else if (directive == "FCC") operationCode = fccDirective(operand);
         else if (directive == "FILL") operationCode = fillDirective(operand);
-        // else if (directive == "")
 
         file << operationCode;
         if (label != "") file << label << " ";
