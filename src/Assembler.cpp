@@ -302,6 +302,8 @@ void Assembler::assemble(string iFileName)
     character = iFile.get();
   }
 
+  //* -------- ------- ------ ----- Second Stage ----- ------ ------- --------
+
   file.close();
   tabsimFile.close();
   iFile.close();

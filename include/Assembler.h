@@ -28,11 +28,6 @@ private:
   enum machineState {
     normal,
     text,
-    identification,
-    sourceForm,
-    operand,
-    label,
-    directive,
     endOfLine
   };
 
