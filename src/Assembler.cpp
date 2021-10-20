@@ -239,13 +239,13 @@ void Assembler::assemble(string iFileName)
 
     switch (state) {
     case machineState::normal:
-      if (character != ' ') {
+      if (character != ' ' && character != '\t') {
         state = machineState::text;
         stringBuffer += character;
       }
       break;
     case machineState::text:
-      if (character == ' ') {
+      if (character == ' ' || character == '\t') {
         state = machineState::normal;
         clasifyText(operandFlag, directiveFlag, stringBuffer, operand, sourceForm, directive, label);
       }
@@ -255,6 +255,7 @@ void Assembler::assemble(string iFileName)
     case machineState::endOfLine:
       if (stringBuffer != "") {
         state = machineState::normal;
+        // cout << "Test: " << stringBuffer;
         clasifyText(operandFlag, directiveFlag, stringBuffer, operand, sourceForm, directive, label);
       }
 
@@ -267,7 +268,7 @@ void Assembler::assemble(string iFileName)
         //* -------- ------- ------ ----- Directives ----- ------ ------- --------
         if (directive == "ORG") address = nSystems.hexToDec(operand.substr(1));
         else if (directive == "START") address = 0;
-        else if (directive == "EQU") labelValue = operand;
+        else if (directive == "EQU") labelValue = nSystems.getHex(operand);
         else if (directive == "BSZ" || directive == "ZMB") operationCode = bszDirective(operand);
         else if (directive == "DC.B" || directive == "FCB") operationCode = dcbDirective(operand);
         else if (directive == "DC.W") operationCode = dcwDirective(operand);
@@ -276,10 +277,13 @@ void Assembler::assemble(string iFileName)
 
         file << operationCode;
         if (label != "") file << label << " ";
-        file << directive << " " << operand << '\n';
+        file << directive;
+        if (operand != "") file << " " << operand;
+        file << endl;
       }
       else if (sourceForm != "") {
-        file << mnemonics[sourceForm].getObjectCode(mnemonics[sourceForm].getAddressMode(operand)) << " ";
+        if (operand == "") file << mnemonics[sourceForm].getObjectCode(mnemonics[sourceForm].getAddressMode(operand)) << " ";
+        else  file << mnemonics[sourceForm].getObjectCode(mnemonics[sourceForm].getAddressMode(mnemonics[sourceForm].getHexOpr(operand))) << " ";
         if (label != "") file << label << " ";
         file << sourceForm << " " << operand << '\n';
 
@@ -289,10 +293,11 @@ void Assembler::assemble(string iFileName)
           addressMode = mnemonics[sourceForm].getAddressMode(hexOpr);
           instructionLength = mnemonics[sourceForm].getInstructionLenght(addressMode);
         }
+        if (sourceForm != "") cout << sourceForm << ": " << instructionLength << " " << addressMode << '\n';
         address += instructionLength;
       }
 
-      if (label != "" && labelValue != "") tabsimFile << label << " $" << hex << stoi(labelValue) << '\n';
+      if (label != "" && labelValue != "") tabsimFile << label << " $" << labelValue << '\n';
       if (directive == "END") return;
       resetValues(operandFlag, directiveFlag, sourceForm, operand, directive, label, labelValue, operationCode, instructionLength);
       break;

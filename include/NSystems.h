@@ -15,6 +15,7 @@ public:
   std::string octToHex(std::string);
   std::string binToHex(std::string);
   std::string decToHex(std::string);
+  std::string getHex(std::string);
   int hexToDec(std::string);
 
 

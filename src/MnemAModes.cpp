@@ -20,10 +20,11 @@ std::string MnemAModes::getHexOpr(std::string opr)
     opr = opr.substr(1);
     imm = "#";
   }
+  // cout << opr;
 
   if (opr[0] == '$') return imm + opr;
-  else if (opr[0] == '@') opr = '$' + nSystems.octToHex(opr);
-  else if (opr[0] == '%') opr = '$' + nSystems.binToHex(opr);
+  else if (opr[0] == '@') opr = '$' + nSystems.octToHex(opr.substr(1));
+  else if (opr[0] == '%') opr = '$' + nSystems.binToHex(opr.substr(1));
   else opr = '$' + nSystems.decToHex(opr);
 
   return imm + opr;
