@@ -206,6 +206,7 @@ void Assembler::assemble(string iFileName)
   string label{ "" };
   string labelValue{ "" };
   string hexOpr{ "" };
+  stringstream ssBuffer;
   char character{ '\0' };
   int instructionLength{ 0 };
   int intBuffer{ 0 };
@@ -258,7 +259,11 @@ void Assembler::assemble(string iFileName)
 
       //* -------- ------- ------ ----- Write to lst file ----- ------ ------- --------
       file << setfill('0') << setw(4) << hex << address << " ";
-      if (directive != "EQU") labelValue = to_string(address);
+      if (directive != "EQU") {
+        ssBuffer << setfill('0') << setw(4) << hex << address;
+        labelValue = ssBuffer.str();
+        ssBuffer.str("");
+      }
 
 
       if (directive != "") {
@@ -309,7 +314,7 @@ void Assembler::assemble(string iFileName)
         address += instructionLength;
       }
 
-      if (label != "" && labelValue != "") tabsimFile << label << " $" << labelValue << '\n';
+      if (label != "" && labelValue != "") tabsimFile << label << " $" << setfill('0') << setw(4) << labelValue << '\n';
       if (directive == "END") return;
       resetValues(operandFlag, directiveFlag, sourceForm, operand, directive, label, labelValue, operationCode, instructionLength);
       break;
