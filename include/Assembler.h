@@ -17,13 +17,14 @@ constexpr int BEGIN = 0;
 class Assembler
 {
 private:
-
+  int address;
   MnemAModes mnemonicBuffer = MnemAModes();
   FileManager myFileManager;
   NSystems nSystems;
 
   std::unordered_map < std::string, MnemAModes > mnemonics; //Source Form | Address Modes
   std::unordered_set < std::string > directives;
+  std::unordered_map <std::string, int > labels;
 
   enum machineState {
     normal,
@@ -40,10 +41,12 @@ private:
   std::string fccDirective(std::string&);
   std::string fillDirective(std::string&);
 
-  int address;
 
   std::string parseObjectCode(std::string);
   void loadMnemonics();
+
+  void firstStage(std::ifstream&, std::fstream&, std::fstream&);
+  void secondStage(std::ifstream&, std::fstream&);
 
 public:
   Assembler();

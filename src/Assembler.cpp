@@ -24,14 +24,14 @@ Assembler::~Assembler()
 
 std::string Assembler::parseObjectCode(std::string objectCode) // object code from mnemonicsDB.csv
 {
-  string stringBuffer = "";
+  string strBuffer = "";
   for (int i = 0; i < objectCode.length(); i++) {
-    stringBuffer += objectCode[i];
+    strBuffer += objectCode[i];
     if (i % 2 != 0 && i != 0 && i != objectCode.length() - 1) { //odd, i != 0 and isn't last
-      stringBuffer += " ";
+      strBuffer += " ";
     }
   }
-  return stringBuffer;
+  return strBuffer;
 }
 
 void Assembler::loadMnemonics()
@@ -39,19 +39,19 @@ void Assembler::loadMnemonics()
   MnemAModes mnemAModes = MnemAModes();
   int pos1, pos2; //comma positions
   string sourceForm, addressMode, objectCode;
-  string stringBuffer;
+  string strBuffer;
 
   ifstream mFile;
   mFile.open("mnemonicsDB.csv", ios::in);
-  getline(mFile, stringBuffer); // Titles
+  getline(mFile, strBuffer); // Titles
 
-  getline(mFile, stringBuffer);
+  getline(mFile, strBuffer);
   while (!mFile.eof()) {
-    pos1 = stringBuffer.find(',');
-    pos2 = stringBuffer.find_last_of(',');
-    sourceForm = stringBuffer.substr(0, pos1);
-    addressMode = stringBuffer.substr(pos1 + 1, pos2 - pos1 - 1);
-    objectCode = parseObjectCode(stringBuffer.substr(pos2 + 1));
+    pos1 = strBuffer.find(',');
+    pos2 = strBuffer.find_last_of(',');
+    sourceForm = strBuffer.substr(0, pos1);
+    addressMode = strBuffer.substr(pos1 + 1, pos2 - pos1 - 1);
+    objectCode = parseObjectCode(strBuffer.substr(pos2 + 1));
 
     if (sourceForm != mnemAModes.getMnenonicName()) {
       mnemAModes.clear();
@@ -60,25 +60,25 @@ void Assembler::loadMnemonics()
     mnemAModes.addAddressMode(addressMode, objectCode);
     mnemonics[sourceForm] = mnemAModes;
 
-    getline(mFile, stringBuffer); // Titles
+    getline(mFile, strBuffer); // Titles
 
   }
 }
 
-void Assembler::clasifyText(bool& operandFlag, bool& directiveFlag, std::string& stringBuffer, std::string& operand, std::string& sourceForm, std::string& directive, std::string& label)
+void Assembler::clasifyText(bool& operandFlag, bool& directiveFlag, std::string& strBuffer, std::string& operand, std::string& sourceForm, std::string& directive, std::string& label)
 {
-  if (operandFlag) operand = stringBuffer;
-  else if (directiveFlag) operand = stringBuffer;
-  else if (mnemonics.count(stringBuffer)) {
-    sourceForm = stringBuffer;
+  if (operandFlag) operand = strBuffer;
+  else if (directiveFlag) operand = strBuffer;
+  else if (mnemonics.count(strBuffer)) {
+    sourceForm = strBuffer;
     if (mnemonics[sourceForm].getAddressMode() != "INH") operandFlag = true;
   }
-  else if (directives.count(stringBuffer)) {
-    directive = stringBuffer;
+  else if (directives.count(strBuffer)) {
+    directive = strBuffer;
     if (directive == "ORG" || directive == "EQU" || directive == "DC.B" || directive == "DC.W" || directive == "BSZ" || directive == "ZMB" || directive == "FCB" || directive == "FCC" || directive == "FILL") directiveFlag = true;
   }
-  else label = stringBuffer;
-  stringBuffer = "";
+  else label = strBuffer;
+  strBuffer = "";
 }
 
 void Assembler::resetValues(bool& operandFlag, bool& directiveFlag, std::string& sourceForm, std::string& operand, std::string& directive, std::string& label, std::string& labelValue, std::string& operationCode, int& instructionLength)
@@ -190,14 +190,8 @@ std::string Assembler::fillDirective(std::string& operand) {
   return operationCode.str();
 }
 
-void Assembler::assemble(string iFileName)
-{
-  //* -------- ------- ------ ----- Vars ----- ------ ------- --------
-  ifstream iFile;
-  fstream file;
-  fstream tabsimFile;
-  string fileName{ "" };
-  string stringBuffer{ "" };
+void Assembler::firstStage(ifstream& iFile, fstream& file, fstream& tabsimFile) {
+  string strBuffer{ "" };
   string sourceForm{ "" };
   string operand{ "" };
   string addressMode{ "" };
@@ -206,7 +200,7 @@ void Assembler::assemble(string iFileName)
   string label{ "" };
   string labelValue{ "" };
   string hexOpr{ "" };
-  stringstream ssBuffer;
+  stringstream ssBuffer{ "" };
   char character{ '\0' };
   int instructionLength{ 0 };
   int intBuffer{ 0 };
@@ -214,25 +208,13 @@ void Assembler::assemble(string iFileName)
   bool directiveFlag{ false };
   machineState state{ machineState::normal };
 
-  //* -------- ------- ------ ----- Open files ----- ------ ------- --------
-  iFile.open(iFileName, ios::in);
-  if (!iFile.is_open()) throw std::invalid_argument("File doesn't exist");
-
-  fileName = iFileName.substr(0, iFileName.find(".")) + ".lst";
-  myFileManager.createFile(fileName);
-  file.open(fileName, ios::in | ios::out);
-
-  fileName = iFileName.substr(0, iFileName.find(".")) + ".tabsim";
-  myFileManager.createFile(fileName);
-  tabsimFile.open(fileName, ios::in | ios::out);
-
   //* -------- ------- ------ ----- Finite State Machine ----- ------ ------- --------
   character = iFile.get();
   while (!iFile.eof()) {
     if (character == '\n') state = machineState::endOfLine;
     if (character == ';') {
-      getline(iFile, stringBuffer);
-      stringBuffer = "";
+      getline(iFile, strBuffer);
+      strBuffer = "";
       state = machineState::endOfLine;
     }
 
@@ -240,21 +222,21 @@ void Assembler::assemble(string iFileName)
     case machineState::normal:
       if (character != ' ' && character != '\t') {
         state = machineState::text;
-        stringBuffer += character;
+        strBuffer += character;
       }
       break;
     case machineState::text:
       if (character == ' ' || character == '\t') {
         state = machineState::normal;
-        clasifyText(operandFlag, directiveFlag, stringBuffer, operand, sourceForm, directive, label);
+        clasifyText(operandFlag, directiveFlag, strBuffer, operand, sourceForm, directive, label);
       }
-      else stringBuffer += character;
+      else strBuffer += character;
 
       break;
     case machineState::endOfLine:
-      if (stringBuffer != "") {
+      if (strBuffer != "") {
         state = machineState::normal;
-        clasifyText(operandFlag, directiveFlag, stringBuffer, operand, sourceForm, directive, label);
+        clasifyText(operandFlag, directiveFlag, strBuffer, operand, sourceForm, directive, label);
       }
 
       //* -------- ------- ------ ----- Write to lst file ----- ------ ------- --------
@@ -284,23 +266,11 @@ void Assembler::assemble(string iFileName)
         file << endl;
       }
       else if (sourceForm != "") {
-        if (operand == "") file << mnemonics[sourceForm].getObjectCode(mnemonics[sourceForm].getAddressMode(operand)) << " "; // write the object code in mnemonics without operand
-        else {
-          try {
-            mnemonics[sourceForm].getHexOpr(operand); // validation to avoid to write the { in file
-            file << "{" << mnemonics[sourceForm].getObjectCode(mnemonics[sourceForm].getAddressMode(mnemonics[sourceForm].getHexOpr(operand))) << "} ";
-          }
-          catch (const std::exception& e)
-          {
-            file << "{" << mnemonics[sourceForm].getObjectCode(mnemonics[sourceForm].getAddressMode(operand)) << "} ";
-          }
-        }
+        file << "{" << mnemonics[sourceForm].getObjectCode(mnemonics[sourceForm].getAddressMode(operand)) << "} ";
 
         if (label != "") file << label << " ";
-        if (operand == "")
-          file << sourceForm << '\n';
-        else
-          file << sourceForm << " " << operand << '\n';
+        if (operand == "") file << '*' << sourceForm << '\n';
+        else file << '*' << sourceForm << " ~" << operand << '\n';
 
         try {
           hexOpr = mnemonics[sourceForm].getHexOpr(operand);
@@ -314,7 +284,10 @@ void Assembler::assemble(string iFileName)
         address += instructionLength;
       }
 
-      if (label != "" && labelValue != "") tabsimFile << label << " $" << setfill('0') << setw(4) << labelValue << '\n';
+      if (label != "" && labelValue != "") {
+        tabsimFile << label << " $" << setfill('0') << setw(4) << labelValue << '\n';
+        labels[label] = nSystems.hexToDec(labelValue); //Save label values for second stage
+      }
       if (directive == "END") return;
       resetValues(operandFlag, directiveFlag, sourceForm, operand, directive, label, labelValue, operationCode, instructionLength);
       break;
@@ -323,10 +296,65 @@ void Assembler::assemble(string iFileName)
     }
     character = iFile.get();
   }
+}
 
-  //* -------- ------- ------ ----- Second Stage ----- ------ ------- --------
+void Assembler::secondStage(std::ifstream& iFile, std::fstream& file) {
+  string strBuffer{ "" };
+  string operationCode{ "" };
+  string sourceForm{ "" };
+  string operand{ "" };
+
+  getline(iFile, strBuffer);
+  while (!iFile.eof()) {
+    if (strBuffer.find('{') == -1) { // There are not changes necesaries to this line
+      file << strBuffer << '\n';
+      getline(iFile, strBuffer);
+      continue;
+    }
+
+    getline(iFile, strBuffer);
+  }
+}
+
+void Assembler::assemble(string iFileName)
+{
+  //* -------- ------- ------ ----- Vars ----- ------ ------- --------
+  ifstream iFile;
+  fstream file;
+  fstream tabsimFile;
+  string fileName{ "" };
+
+
+  //* -------- ------- ------ ----- First Stage ----- ------ ------- --------
+  iFile.open(iFileName, ios::in);
+  if (!iFile.is_open()) throw std::invalid_argument("File doesn't exist");
+
+  myFileManager.createFile("aux.lst");
+  file.open("aux.lst", ios::in | ios::out);
+
+  fileName = iFileName.substr(0, iFileName.find(".")) + ".tabsim";
+  myFileManager.createFile(fileName);
+  tabsimFile.open(fileName, ios::in | ios::out);
+
+  firstStage(iFile, file, tabsimFile);
 
   file.close();
-  tabsimFile.close();
   iFile.close();
+  tabsimFile.close();
+  //* -------- ------- ------ ----- Second Stage ----- ------ ------- --------
+  iFile.open("aux.lst", ios::in);
+
+  fileName = iFileName.substr(0, iFileName.find(".")) + ".lst";
+  myFileManager.createFile(fileName);
+  file.open(fileName, ios::in | ios::out);
+
+  secondStage(iFile, file);
+
+  iFile.close();
+  file.close();
+  tabsimFile.close();
+
+  // remove("aux.lst");
+  // for (auto& i : labels) cout << i.first << ": " << i.second << '\n';
+
 }
