@@ -22,7 +22,7 @@ Assembler::~Assembler()
 {
 }
 
-std::string Assembler::parseObjectCode(std::string objectCode)
+std::string Assembler::parseObjectCode(std::string objectCode) // object code from mnemonicsDB.csv
 {
   string stringBuffer = "";
   for (int i = 0; i < objectCode.length(); i++) {
@@ -60,7 +60,6 @@ void Assembler::loadMnemonics()
     mnemAModes.addAddressMode(addressMode, objectCode);
     mnemonics[sourceForm] = mnemAModes;
 
-
     getline(mFile, stringBuffer); // Titles
 
   }
@@ -68,7 +67,6 @@ void Assembler::loadMnemonics()
 
 void Assembler::clasifyText(bool& operandFlag, bool& directiveFlag, std::string& stringBuffer, std::string& operand, std::string& sourceForm, std::string& directive, std::string& label)
 {
-
   if (operandFlag) operand = stringBuffer;
   else if (directiveFlag) operand = stringBuffer;
   else if (mnemonics.count(stringBuffer)) {
@@ -255,7 +253,6 @@ void Assembler::assemble(string iFileName)
     case machineState::endOfLine:
       if (stringBuffer != "") {
         state = machineState::normal;
-        // cout << "Test: " << stringBuffer;
         clasifyText(operandFlag, directiveFlag, stringBuffer, operand, sourceForm, directive, label);
       }
 
@@ -282,18 +279,33 @@ void Assembler::assemble(string iFileName)
         file << endl;
       }
       else if (sourceForm != "") {
-        if (operand == "") file << mnemonics[sourceForm].getObjectCode(mnemonics[sourceForm].getAddressMode(operand)) << " ";
-        else  file << mnemonics[sourceForm].getObjectCode(mnemonics[sourceForm].getAddressMode(mnemonics[sourceForm].getHexOpr(operand))) << " ";
-        if (label != "") file << label << " ";
-        file << sourceForm << " " << operand << '\n';
-
-        if (operand == "") instructionLength = mnemonics[sourceForm].getInstructionLenght();
+        if (operand == "") file << mnemonics[sourceForm].getObjectCode(mnemonics[sourceForm].getAddressMode(operand)) << " "; // write the object code in mnemonics without operand
         else {
+          try {
+            mnemonics[sourceForm].getHexOpr(operand); // validation to avoid to write the { in file
+            file << "{" << mnemonics[sourceForm].getObjectCode(mnemonics[sourceForm].getAddressMode(mnemonics[sourceForm].getHexOpr(operand))) << "} ";
+          }
+          catch (const std::exception& e)
+          {
+            file << "{" << mnemonics[sourceForm].getObjectCode(mnemonics[sourceForm].getAddressMode(operand)) << "} ";
+          }
+        }
+
+        if (label != "") file << label << " ";
+        if (operand == "")
+          file << sourceForm << '\n';
+        else
+          file << sourceForm << " " << operand << '\n';
+
+        try {
           hexOpr = mnemonics[sourceForm].getHexOpr(operand);
           addressMode = mnemonics[sourceForm].getAddressMode(hexOpr);
           instructionLength = mnemonics[sourceForm].getInstructionLenght(addressMode);
         }
-        if (sourceForm != "") cout << sourceForm << ": " << instructionLength << " " << addressMode << '\n';
+        catch (const std::exception& e) {// operand == "" || the operand is a label of tabsim
+          instructionLength = mnemonics[sourceForm].getInstructionLenght();
+        }
+
         address += instructionLength;
       }
 
