@@ -21,6 +21,7 @@ private:
   MnemAModes mnemonicBuffer = MnemAModes();
   FileManager myFileManager;
   NSystems nSystems;
+  std::unordered_set<char> lowercaseLetters;
 
   std::unordered_map < std::string, MnemAModes > mnemonics; //Source Form | Address Modes
   std::unordered_set < std::string > directives;
@@ -45,8 +46,11 @@ private:
   std::string parseObjectCode(std::string);
   void loadMnemonics();
 
+  std::string calculateObjectCode(std::string, std::string, std::string, std::string);
+
   void firstStage(std::ifstream&, std::fstream&, std::fstream&);
   void secondStage(std::ifstream&, std::fstream&);
+
 
 public:
   Assembler();
@@ -55,3 +59,5 @@ public:
   void assemble(std::string); //Generate object code
 
 };
+
+

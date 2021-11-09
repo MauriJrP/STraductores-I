@@ -16,6 +16,8 @@ Assembler::Assembler() : address(BEGIN)
   directives.insert("FCC");
   directives.insert("FCB");
   loadMnemonics();
+  for (char c = 'a'; c <= 'z'; c++)
+    lowercaseLetters.insert(c);
 }
 
 Assembler::~Assembler()
@@ -61,7 +63,6 @@ void Assembler::loadMnemonics()
     mnemonics[sourceForm] = mnemAModes;
 
     getline(mFile, strBuffer); // Titles
-
   }
 }
 
@@ -109,7 +110,7 @@ std::string Assembler::dcbDirective(std::string& operand)
     if (operand[i] == ',' || i == operand.length() - 1) {
       if (operand[i] != ',') byte += operand[i];
       if (byte[0] == '\'') byte = to_string((int)byte[1]);
-      operationCode << setfill('0') << setw(2) << hex << stoi(byte) << " ";
+      operationCode << setfill('0') << setw(2) << hex << uppercase << stoi(byte) << " ";
       byte = "";
       ++bytes;
     }
@@ -136,7 +137,7 @@ std::string Assembler::dcwDirective(std::string& operand)
       if (operand[i] != ',') byte += operand[i];
       if (byte[0] == '\'') byte = to_string((int)byte[1]);
       ssBuffer.str(string());
-      ssBuffer << setfill('0') << setw(4) << hex << stoi(byte);
+      ssBuffer << setfill('0') << setw(4) << hex << uppercase << stoi(byte);
       for (int j = 1; j <= ssBuffer.str().length(); j++) {
         operationCode << ssBuffer.str()[j - 1];
         if (j % 2 == 0)
@@ -169,7 +170,7 @@ std::string Assembler::fccDirective(std::string& operand)
   for (int i = 0; i < operand.length(); i++) {
     if (operand[i] != '/') {
       byte = to_string((int)operand[i]);
-      operationCode << setfill('0') << setw(2) << hex << stoi(byte) << " ";
+      operationCode << setfill('0') << setw(2) << hex << uppercase << stoi(byte) << " ";
       byte = "";
       ++bytes;
     }
@@ -188,6 +189,42 @@ std::string Assembler::fillDirective(std::string& operand) {
   }
   address += bytesToFill;
   return operationCode.str();
+}
+
+std::string Assembler::calculateObjectCode(string objectCode, string sourceForm, string operand, string am) {
+  stringstream result{ "" };
+  string reg{ "" }; // register
+  int decOperand{ 0 }; // operand value in decimal
+  int intBuffer{ 0 };
+
+  //* -------- ------- ------ ----- Separate operand in decOperand and register ----- ------ ------- --------
+  if (operand.find(',') != -1) { // validate if operand has 2 operands
+    reg = operand.substr(0, operand.find(','));
+    operand = operand.substr(operand.find(',') + 1);
+  }
+
+  if (labels.count(operand) == 1) decOperand = labels[operand]; // validate if the operand is a label
+  else {
+    if (operand[0] == '#') operand = operand.substr(1);
+    decOperand = nSystems.hexToDec(mnemonicBuffer.getHexOpr(operand).substr(1));
+    // cout << operand << ": " << mnemonicBuffer.getHexOpr(operand).substr(1) << endl;
+  }
+
+  //* -------- ------- ------ ----- Calculate object code ----- ------ ------- --------
+  for (int i = 0; i < objectCode.length(); i++) {
+    if (lowercaseLetters.count(objectCode[i]) > 0) break;
+    result << objectCode[i];
+  }
+  if (am == "IMM" || am == "DIR" || am == "EXT") {
+    if (decOperand > 255) result << setfill('0') << setw(4) << hex << uppercase << decOperand;
+    else result << setfill('0') << setw(2) << hex << uppercase << decOperand;
+  }
+  else {
+    result.str(objectCode);
+    cout << "Source form: " << sourceForm << " | Address Mode: " << am << endl;
+  }
+
+  return result.str();
 }
 
 void Assembler::firstStage(ifstream& iFile, fstream& file, fstream& tabsimFile) {
@@ -240,9 +277,9 @@ void Assembler::firstStage(ifstream& iFile, fstream& file, fstream& tabsimFile) 
       }
 
       //* -------- ------- ------ ----- Write to lst file ----- ------ ------- --------
-      file << setfill('0') << setw(4) << hex << address << " ";
+      file << setfill('0') << setw(4) << hex << uppercase << address << " ";
       if (directive != "EQU") {
-        ssBuffer << setfill('0') << setw(4) << hex << address;
+        ssBuffer << setfill('0') << setw(4) << hex << uppercase << address;
         labelValue = ssBuffer.str();
         ssBuffer.str("");
       }
@@ -299,10 +336,12 @@ void Assembler::firstStage(ifstream& iFile, fstream& file, fstream& tabsimFile) 
 }
 
 void Assembler::secondStage(std::ifstream& iFile, std::fstream& file) {
+  int intBuffer{ 0 };
   string strBuffer{ "" };
-  string operationCode{ "" };
-  string sourceForm{ "" };
-  string operand{ "" };
+  // print all nmenonics
+  // for (auto& it : mnemonics) {
+  //   cout << '|' << it.second.getMnenonicName() << "|\n";
+  // }
 
   getline(iFile, strBuffer);
   while (!iFile.eof()) {
@@ -311,6 +350,37 @@ void Assembler::secondStage(std::ifstream& iFile, std::fstream& file) {
       getline(iFile, strBuffer);
       continue;
     }
+
+    string objectCode{ "" };
+    string sourceForm{ "" };
+    string operand{ "" };
+    string addressMode{ "" };
+
+    //* -------- ------- ------ ----- Read data ----- ------ ------- --------
+    intBuffer = strBuffer.find('{') + 1;
+    objectCode = strBuffer.substr(intBuffer, strBuffer.find('}') - intBuffer);
+
+    sourceForm = strBuffer.substr(strBuffer.find('*') + 1);
+    sourceForm = sourceForm.substr(0, strBuffer.find(' '));
+    if (sourceForm.back() == ' ') sourceForm = sourceForm.substr(0, sourceForm.size() - 1);
+
+    intBuffer = strBuffer.find('~');
+    if (intBuffer != -1) operand = strBuffer.substr(intBuffer + 1);
+
+    if (operand != "") addressMode = mnemonics[sourceForm].getAddressMode(operand);
+    else addressMode = mnemonics[sourceForm].getAddressMode();
+
+    //* -------- ------- ------ ----- Calculate operation code ----- ------ ------- --------
+    if (operand != "") objectCode = calculateObjectCode(objectCode, sourceForm, operand, addressMode);
+
+    //* -------- ------- ------ ----- Write to file ----- ------ ------- --------
+    intBuffer = strBuffer.find('{');
+    strBuffer.replace(intBuffer, strBuffer.find('}') - intBuffer + 1, objectCode);
+    strBuffer.replace(strBuffer.find('*'), 1, "");
+    if (strBuffer.find('~') != -1) strBuffer.replace(strBuffer.find('~'), 1, "");
+    file << strBuffer << '\n';
+
+    // cout << operand << endl;
 
     getline(iFile, strBuffer);
   }

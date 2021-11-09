@@ -40,10 +40,10 @@ std::string MnemAModes::getAddressMode(std::string opr)
   if (opr[0] == '#') return "IMM";
 
   //$ and 2 digits
-  if (opr.length() <= 3 && addressModes.find("DIR") != addressModes.end()) return "DIR";
+  if (opr.find(',') != -1 && addressModes.find("IDX") != addressModes.end()) return "IDX";
+  else if (opr.length() <= 3 && addressModes.find("DIR") != addressModes.end()) return "DIR";
   else if (opr.length() <= 5 && addressModes.find("EXT") != addressModes.end()) return "EXT";
   else return addressModes.begin()->first;
-  // else return "Error";
 }
 
 int MnemAModes::getInstructionLenght(string am)
