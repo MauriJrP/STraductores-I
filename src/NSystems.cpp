@@ -43,3 +43,12 @@ int NSystems::hexToDec(std::string n)
   return stoi(n, 0, 16);
 }
 
+// function that made a substraction of two numbers in hexadecimal
+// std::string NSystems::subHex(std::string n1, std::string n2)
+// {
+//   int n1_dec = hexToDec(n1);
+//   int n2_dec = hexToDec(n2);
+//   int result = n1_dec - n2_dec;
+//   return decToHex(to_string(result));
+// }
+

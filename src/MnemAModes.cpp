@@ -13,14 +13,13 @@ MnemAModes::~MnemAModes()
 {
 }
 
-std::string MnemAModes::getHexOpr(std::string opr)
+std::string MnemAModes::getHexOpr(std::string opr) // return the value in hex  with $ prefix
 {
   string imm = "";
   if (opr[0] == '#') {
     opr = opr.substr(1);
     imm = "#";
   }
-  // cout << opr;
 
   if (opr[0] == '$') return imm + opr;
   else if (opr[0] == '@') opr = '$' + nSystems.octToHex(opr.substr(1));

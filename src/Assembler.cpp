@@ -191,9 +191,12 @@ std::string Assembler::fillDirective(std::string& operand) {
   return operationCode.str();
 }
 
-std::string Assembler::calculateObjectCode(string objectCode, string sourceForm, string operand, string am) {
+std::string Assembler::calculateObjectCode(string objectCode, string sourceForm, string operand, string am, int actualAddress) {
   stringstream result{ "" };
+  stringstream ssBuffer{ "" };
+  string stringBuffer{ "" };
   string reg{ "" }; // register
+  string substract{ "" };
   int decOperand{ 0 }; // operand value in decimal
   int intBuffer{ 0 };
 
@@ -207,21 +210,57 @@ std::string Assembler::calculateObjectCode(string objectCode, string sourceForm,
   else {
     if (operand[0] == '#') operand = operand.substr(1);
     decOperand = nSystems.hexToDec(mnemonicBuffer.getHexOpr(operand).substr(1));
-    // cout << operand << ": " << mnemonicBuffer.getHexOpr(operand).substr(1) << endl;
   }
 
   //* -------- ------- ------ ----- Calculate object code ----- ------ ------- --------
-  for (int i = 0; i < objectCode.length(); i++) {
-    if (lowercaseLetters.count(objectCode[i]) > 0) break;
+  for (int i = 0; i < objectCode.length(); i++) { // save the object code that doesn't need to be calculated
+    if (lowercaseLetters.count(objectCode[i]) > 0) {
+      stringBuffer = objectCode.substr(i); // saved to calculate the length of the object code that needs to be calculated
+      break;
+    }
     result << objectCode[i];
   }
+
   if (am == "IMM" || am == "DIR" || am == "EXT") {
-    if (decOperand > 255) result << setfill('0') << setw(4) << hex << uppercase << decOperand;
+    if (decOperand > 255 || stringBuffer.length() > 2) result << setfill('0') << setw(4) << hex << uppercase << decOperand;
     else result << setfill('0') << setw(2) << hex << uppercase << decOperand;
+  }
+  else if (am == "REL8" || am == "REL9") {
+    intBuffer = decOperand - actualAddress;
+    if (am == "REL9") { // only for mnemonic DBEQ at the moment
+      if (intBuffer >= 0) {
+        if (reg == "A") result << "00 ";
+        else if (reg == "B") result << "01 ";
+        else if (reg == "D") result << "04 ";
+        else if (reg == "X") result << "05 ";
+        else if (reg == "Y") result << "06 ";
+        else if (reg == "SP") result << "07 ";
+      }
+      else {
+        if (reg == "A") result << "10 ";
+        else if (reg == "B") result << "11 ";
+        else if (reg == "D") result << "14 ";
+        else if (reg == "X") result << "15 ";
+        else if (reg == "Y") result << "16 ";
+        else if (reg == "SP") result << "17 ";
+      }
+    }
+    ssBuffer << setfill('0') << setw(2) << hex << uppercase << intBuffer;
+    ssBuffer.str(ssBuffer.str().substr(ssBuffer.str().length() - 2));
+
+    if (intBuffer >= -128 && intBuffer <= 127) result << ssBuffer.str();
+    else result.str("FDR");
+  }
+  else if (am == "REL16") {
+    intBuffer = decOperand - actualAddress;
+    ssBuffer << setfill('0') << setw(4) << hex << uppercase << intBuffer;
+    ssBuffer.str(ssBuffer.str().substr(ssBuffer.str().length() - 4));
+    if (intBuffer >= -32768 && intBuffer <= 32767) result << ssBuffer.str();
+    else result.str("FDR");
   }
   else {
     result.str(objectCode);
-    cout << "Source form: " << sourceForm << " | Address Mode: " << am << endl;
+    // cout << "Source form: " << sourceForm << " | Address Mode: " << am << endl;
   }
 
   return result.str();
@@ -303,7 +342,15 @@ void Assembler::firstStage(ifstream& iFile, fstream& file, fstream& tabsimFile) 
         file << endl;
       }
       else if (sourceForm != "") {
-        file << "{" << mnemonics[sourceForm].getObjectCode(mnemonics[sourceForm].getAddressMode(operand)) << "} ";
+        try // write base object code between {}
+        {
+          mnemonicBuffer.getHexOpr(operand);
+          file << "{" << mnemonics[sourceForm].getObjectCode(mnemonics[sourceForm].getAddressMode(mnemonicBuffer.getHexOpr(operand))) << "} ";
+        }
+        catch (const std::exception& e)
+        {
+          file << "{" << mnemonics[sourceForm].getObjectCode(mnemonics[sourceForm].getAddressMode(operand)) << "} ";
+        }
 
         if (label != "") file << label << " ";
         if (operand == "") file << '*' << sourceForm << '\n';
@@ -338,10 +385,6 @@ void Assembler::firstStage(ifstream& iFile, fstream& file, fstream& tabsimFile) 
 void Assembler::secondStage(std::ifstream& iFile, std::fstream& file) {
   int intBuffer{ 0 };
   string strBuffer{ "" };
-  // print all nmenonics
-  // for (auto& it : mnemonics) {
-  //   cout << '|' << it.second.getMnenonicName() << "|\n";
-  // }
 
   getline(iFile, strBuffer);
   while (!iFile.eof()) {
@@ -355,6 +398,7 @@ void Assembler::secondStage(std::ifstream& iFile, std::fstream& file) {
     string sourceForm{ "" };
     string operand{ "" };
     string addressMode{ "" };
+    int actualAddress{ 0 };
 
     //* -------- ------- ------ ----- Read data ----- ------ ------- --------
     intBuffer = strBuffer.find('{') + 1;
@@ -367,11 +411,20 @@ void Assembler::secondStage(std::ifstream& iFile, std::fstream& file) {
     intBuffer = strBuffer.find('~');
     if (intBuffer != -1) operand = strBuffer.substr(intBuffer + 1);
 
-    if (operand != "") addressMode = mnemonics[sourceForm].getAddressMode(operand);
+    if (operand != "") {
+      if (labels.count(operand) != 0) addressMode = mnemonics[sourceForm].getAddressMode(to_string(labels[operand]));
+      else if (operand.find(',') == -1) addressMode = mnemonics[sourceForm].getAddressMode(mnemonicBuffer.getHexOpr(operand));
+      else addressMode = mnemonics[sourceForm].getAddressMode(operand);
+    }
     else addressMode = mnemonics[sourceForm].getAddressMode();
 
+    actualAddress = nSystems.hexToDec(strBuffer.substr(0, strBuffer.find(' '))); // only needed for REL 8, 9, 16
+    if (addressMode == "REL8") actualAddress += 2;
+    else if (addressMode == "REL9") actualAddress += 3;
+    else if (addressMode == "REL16") actualAddress += 4;
+
     //* -------- ------- ------ ----- Calculate operation code ----- ------ ------- --------
-    if (operand != "") objectCode = calculateObjectCode(objectCode, sourceForm, operand, addressMode);
+    if (operand != "") objectCode = calculateObjectCode(objectCode, sourceForm, operand, addressMode, actualAddress);
 
     //* -------- ------- ------ ----- Write to file ----- ------ ------- --------
     intBuffer = strBuffer.find('{');
@@ -379,8 +432,6 @@ void Assembler::secondStage(std::ifstream& iFile, std::fstream& file) {
     strBuffer.replace(strBuffer.find('*'), 1, "");
     if (strBuffer.find('~') != -1) strBuffer.replace(strBuffer.find('~'), 1, "");
     file << strBuffer << '\n';
-
-    // cout << operand << endl;
 
     getline(iFile, strBuffer);
   }
@@ -424,7 +475,6 @@ void Assembler::assemble(string iFileName)
   file.close();
   tabsimFile.close();
 
-  // remove("aux.lst");
-  // for (auto& i : labels) cout << i.first << ": " << i.second << '\n';
+  remove("aux.lst");
 
 }

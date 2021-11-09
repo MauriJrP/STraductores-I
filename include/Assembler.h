@@ -46,7 +46,7 @@ private:
   std::string parseObjectCode(std::string);
   void loadMnemonics();
 
-  std::string calculateObjectCode(std::string, std::string, std::string, std::string);
+  std::string calculateObjectCode(std::string, std::string, std::string, std::string, int);
 
   void firstStage(std::ifstream&, std::fstream&, std::fstream&);
   void secondStage(std::ifstream&, std::fstream&);
