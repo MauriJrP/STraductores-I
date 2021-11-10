@@ -528,17 +528,17 @@ void Assembler::assemble(string iFileName)
   iFile.close();
   tabsimFile.close();
   //* -------- ------- ------ ----- Second Stage ----- ------ ------- --------
-  iFile.open("aux.lst", ios::in);
+  // iFile.open("aux.lst", ios::in);
 
-  fileName = iFileName.substr(0, iFileName.find(".")) + ".lst";
-  myFileManager.createFile(fileName);
-  file.open(fileName, ios::in | ios::out);
+  // fileName = iFileName.substr(0, iFileName.find(".")) + ".lst";
+  // myFileManager.createFile(fileName);
+  // file.open(fileName, ios::in | ios::out);
 
-  secondStage(iFile, file);
+  // secondStage(iFile, file);
 
-  iFile.close();
-  file.close();
-  tabsimFile.close();
+  // iFile.close();
+  // file.close();
+  // tabsimFile.close();
 
   // remove("aux.lst");
 

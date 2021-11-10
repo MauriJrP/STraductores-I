@@ -4,6 +4,10 @@ using namespace std;
 
 MnemAModes::MnemAModes() : Mnemonic("")
 {
+  idxRegs.insert("X");
+  idxRegs.insert("Y");
+  idxRegs.insert("SP");
+  idxRegs.insert("PC");
 }
 
 MnemAModes::MnemAModes(std::string n, std::unordered_map<std::string, std::string> am) : Mnemonic(n), addressModes(am)
@@ -42,10 +46,11 @@ std::string MnemAModes::getAddressMode(std::string opr)
   string strBuffer{ "" };
   if (intBuffer != -1 && addressModes.find("IDX") != addressModes.end()) {
     strBuffer = opr.substr(0, intBuffer);
-    if (strBuffer[0] == '[') return "[IDX2]"; // for now that only there are one with square brackets
-    else if (intBuffer == 0 || (stoi(strBuffer) >= -16 && stoi(strBuffer) <= 15)) return "IDX";
-    else if ((stoi(strBuffer) >= -256 && stoi(strBuffer) <= 255) || intBuffer == 0) return "IDX1";
-    else if ((stoi(strBuffer) >= -32768 && stoi(strBuffer) <= 65535) || intBuffer == 0) return "IDX2";
+    if (strBuffer[0] == '[' && idxRegs.count(strBuffer.substr(1)) != -1) return "[D,IDX]"; // F6
+    else if (strBuffer[0] == '[') return "[IDX2]"; // F3
+    else if (idxRegs.count(strBuffer) != -1 || intBuffer == 0 || (stoi(strBuffer) >= -16 && stoi(strBuffer) <= 15)) return "IDX"; // F1 and F5
+    else if ((stoi(strBuffer) >= -256 && stoi(strBuffer) <= 255) || intBuffer == 0) return "IDX1"; // F2
+    else if ((stoi(strBuffer) >= -32768 && stoi(strBuffer) <= 65535) || intBuffer == 0) return "IDX2"; // F2
   }
   else if (opr.length() <= 3 && addressModes.find("DIR") != addressModes.end()) return "DIR";
   else if (opr.length() <= 5 && addressModes.find("EXT") != addressModes.end()) return "EXT";

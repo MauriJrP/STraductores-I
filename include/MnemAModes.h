@@ -4,6 +4,7 @@
 #include <cstring>
 #include <sstream>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "./NSystems.h"
 
@@ -12,6 +13,7 @@ class MnemAModes
 private:
   std::string Mnemonic;
   std::unordered_map<std::string, std::string> addressModes; // addressMode | objectCode
+  std::unordered_set<std::string> idxRegs; //Indexed Registers
   NSystems nSystems;
 
 public:
