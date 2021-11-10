@@ -18,6 +18,10 @@ Assembler::Assembler() : address(BEGIN)
   loadMnemonics();
   for (char c = 'a'; c <= 'z'; c++)
     lowercaseLetters.insert(c);
+  idxRegs["X"] = "00";
+  idxRegs["Y"] = "01";
+  idxRegs["SP"] = "10";
+  idxRegs["PC"] = "11";
 }
 
 Assembler::~Assembler()
@@ -364,6 +368,7 @@ void Assembler::firstStage(ifstream& iFile, fstream& file, fstream& tabsimFile) 
       else if (sourceForm != "") {
         try // write base object code between {}
         {
+          if (operand.find(',') != -1) stoi("["); // force exception
           mnemonicBuffer.getHexOpr(operand);
           file << "{" << mnemonics[sourceForm].getObjectCode(mnemonics[sourceForm].getAddressMode(mnemonicBuffer.getHexOpr(operand))) << "} ";
         }
@@ -377,9 +382,13 @@ void Assembler::firstStage(ifstream& iFile, fstream& file, fstream& tabsimFile) 
         else file << '*' << sourceForm << " ~" << operand << '\n';
 
         try {
-          hexOpr = mnemonics[sourceForm].getHexOpr(operand);
-          addressMode = mnemonics[sourceForm].getAddressMode(hexOpr);
-          instructionLength = mnemonics[sourceForm].getInstructionLenght(addressMode);
+          if (idxRegs.count(operand.substr(operand.find(',') + 1)) != 0 || operand[0] == '[')
+            instructionLength = mnemonics[sourceForm].getInstructionLenght(mnemonics[sourceForm].getAddressMode(operand));
+          else {
+            hexOpr = mnemonics[sourceForm].getHexOpr(operand);
+            addressMode = mnemonics[sourceForm].getAddressMode(hexOpr);
+            instructionLength = mnemonics[sourceForm].getInstructionLenght(addressMode);
+          }
         }
         catch (const std::exception& e) {// operand == "" || the operand is a label of tabsim
           instructionLength = mnemonics[sourceForm].getInstructionLenght();
@@ -483,18 +492,18 @@ void Assembler::assemble(string iFileName)
   iFile.close();
   tabsimFile.close();
   //* -------- ------- ------ ----- Second Stage ----- ------ ------- --------
-  iFile.open("aux.lst", ios::in);
+  // iFile.open("aux.lst", ios::in);
 
-  fileName = iFileName.substr(0, iFileName.find(".")) + ".lst";
-  myFileManager.createFile(fileName);
-  file.open(fileName, ios::in | ios::out);
+  // fileName = iFileName.substr(0, iFileName.find(".")) + ".lst";
+  // myFileManager.createFile(fileName);
+  // file.open(fileName, ios::in | ios::out);
 
-  secondStage(iFile, file);
+  // secondStage(iFile, file);
 
-  iFile.close();
-  file.close();
-  tabsimFile.close();
+  // iFile.close();
+  // file.close();
+  // tabsimFile.close();
 
-  remove("aux.lst");
+  // remove("aux.lst");
 
 }

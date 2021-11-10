@@ -26,6 +26,7 @@ private:
   std::unordered_map < std::string, MnemAModes > mnemonics; //Source Form | Address Modes
   std::unordered_set < std::string > directives;
   std::unordered_map <std::string, int > labels;
+  std::unordered_map <std::string, std::string > idxRegs; //Indexed Registers
 
   enum machineState {
     normal,

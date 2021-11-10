@@ -38,11 +38,19 @@ std::string MnemAModes::getAddressMode(std::string opr)
 {
   if (opr[0] == '#') return "IMM";
 
-  //$ and 2 digits
-  if (opr.find(',') != -1 && addressModes.find("IDX") != addressModes.end()) return "IDX";
+  size_t intBuffer{ opr.find(',') };
+  string strBuffer{ "" };
+  if (intBuffer != -1 && addressModes.find("IDX") != addressModes.end()) {
+    strBuffer = opr.substr(0, intBuffer);
+    if (strBuffer[0] == '[') return "[IDX2]"; // for now that only there are one with square brackets
+    else if (intBuffer == 0 || (stoi(strBuffer) >= -16 && stoi(strBuffer) <= 15)) return "IDX";
+    else if ((stoi(strBuffer) >= -256 && stoi(strBuffer) <= 255) || intBuffer == 0) return "IDX1";
+    else if ((stoi(strBuffer) >= -32768 && stoi(strBuffer) <= 65535) || intBuffer == 0) return "IDX2";
+  }
   else if (opr.length() <= 3 && addressModes.find("DIR") != addressModes.end()) return "DIR";
   else if (opr.length() <= 5 && addressModes.find("EXT") != addressModes.end()) return "EXT";
-  else return addressModes.begin()->first;
+
+  return addressModes.begin()->first;
 }
 
 int MnemAModes::getInstructionLenght(string am)
