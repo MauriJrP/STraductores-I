@@ -286,10 +286,19 @@ std::string Assembler::calculateObjectCode(string objectCode, string sourceForm,
   }
   else if (am == "IDX") {
     stringBuffer = operand.substr(operand.find(',') + 1);
-    ssBuffer << idxRegs[stringBuffer] << 0;
-    if (operand[0] == '-') ssBuffer << "1";
-    else ssBuffer << "0";
-    ssBuffer << setfill('0') << setw(4) << nSystems.decToBinComplement2(operand.substr(0, operand.find(','))) << endl;
+    // cout << "Source form: " << sourceForm << " Operand: " << operand << " Register: " << operand.substr(0, operand.find(',')) << endl;
+    if (idxRegs.count(operand.substr(0, operand.find(','))) != -1) { // F5
+      ssBuffer << "111" << idxRegs[stringBuffer] << "1";
+      if (operand.substr(0, operand.find(',')) == "A") ssBuffer << "00";
+      if (operand.substr(0, operand.find(',')) == "B") ssBuffer << "01";
+      if (operand.substr(0, operand.find(',')) == "D") ssBuffer << "10";
+    }
+    else { // F1
+      ssBuffer << idxRegs[stringBuffer] << 0;
+      if (operand[0] == '-') ssBuffer << "1";
+      else ssBuffer << "0";
+      ssBuffer << setfill('0') << setw(4) << nSystems.decToBinComplement2(operand.substr(0, operand.find(','))) << endl;
+    }
     result << setfill('0') << setw(2) << uppercase << nSystems.binToHex(ssBuffer.str());
   }
   else if (am == "IDX1" || am == "IDX2") {
@@ -309,7 +318,10 @@ std::string Assembler::calculateObjectCode(string objectCode, string sourceForm,
     }
   }
   else if (am == "[D,IDX]") {
-    return objectCode;
+    if (operand[1] != 'D') return "FDR";
+    stringBuffer = operand.substr(operand.find(',') + 1);
+    ssBuffer << "111" << idxRegs[stringBuffer.substr(0, stringBuffer.length() - 1)] << "111";
+    result << setfill('0') << setw(2) << uppercase << nSystems.binToHex(ssBuffer.str()) << " ";
   }
   else if (am == "[IDX2]") {
     if (operand[1] == '-') return "FDR";
@@ -528,18 +540,18 @@ void Assembler::assemble(string iFileName)
   iFile.close();
   tabsimFile.close();
   //* -------- ------- ------ ----- Second Stage ----- ------ ------- --------
-  // iFile.open("aux.lst", ios::in);
+  iFile.open("aux.lst", ios::in);
 
-  // fileName = iFileName.substr(0, iFileName.find(".")) + ".lst";
-  // myFileManager.createFile(fileName);
-  // file.open(fileName, ios::in | ios::out);
+  fileName = iFileName.substr(0, iFileName.find(".")) + ".lst";
+  myFileManager.createFile(fileName);
+  file.open(fileName, ios::in | ios::out);
 
-  // secondStage(iFile, file);
+  secondStage(iFile, file);
 
-  // iFile.close();
-  // file.close();
-  // tabsimFile.close();
+  iFile.close();
+  file.close();
+  tabsimFile.close();
 
-  // remove("aux.lst");
+  remove("aux.lst");
 
 }
