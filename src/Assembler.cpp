@@ -540,6 +540,6 @@ void Assembler::assemble(string iFileName)
   file.close();
   tabsimFile.close();
 
-  remove("aux.lst");
+  // remove("aux.lst");
 
 }
