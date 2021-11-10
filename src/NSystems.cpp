@@ -23,6 +23,19 @@ std::string NSystems::binToHex(std::string num)
   return decToHex(to_string(intNum));
 }
 
+// function that converts a decimal number to binary in complement 2
+std::string NSystems::decToBinComplement2(std::string num)
+{
+  int intNum = stoi(num);
+  string binNum = "";
+  while (intNum > 0)
+  {
+    binNum = to_string(intNum % 2) + binNum;
+    intNum /= 2;
+  }
+  return binNum;
+}
+
 std::string NSystems::decToHex(std::string num)
 {
   stringstream result;

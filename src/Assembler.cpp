@@ -205,15 +205,17 @@ std::string Assembler::calculateObjectCode(string objectCode, string sourceForm,
   int intBuffer{ 0 };
 
   //* -------- ------- ------ ----- Separate operand in decOperand and register ----- ------ ------- --------
-  if (operand.find(',') != -1) { // validate if operand has 2 operands
-    reg = operand.substr(0, operand.find(','));
-    operand = operand.substr(operand.find(',') + 1);
-  }
+  if (am.find("IDX") == -1) {
+    if (operand.find(',') != -1) { // validate if operand has 2 operands
+      reg = operand.substr(0, operand.find(','));
+      operand = operand.substr(operand.find(',') + 1);
+    }
 
-  if (labels.count(operand) == 1) decOperand = labels[operand]; // validate if the operand is a label
-  else {
-    if (operand[0] == '#') operand = operand.substr(1);
-    decOperand = nSystems.hexToDec(mnemonicBuffer.getHexOpr(operand).substr(1));
+    if (labels.count(operand) == 1) decOperand = labels[operand]; // validate if the operand is a label
+    else {
+      if (operand[0] == '#') operand = operand.substr(1);
+      decOperand = nSystems.hexToDec(mnemonicBuffer.getHexOpr(operand).substr(1));
+    }
   }
 
   //* -------- ------- ------ ----- Calculate object code ----- ------ ------- --------
@@ -281,6 +283,40 @@ std::string Assembler::calculateObjectCode(string objectCode, string sourceForm,
     ssBuffer.str(ssBuffer.str().substr(ssBuffer.str().length() - 4));
     if (intBuffer >= -32768 && intBuffer <= 32767) result << ssBuffer.str();
     else result.str("FDR");
+  }
+  else if (am == "IDX") {
+    stringBuffer = operand.substr(operand.find(',') + 1);
+    ssBuffer << idxRegs[stringBuffer] << 0;
+    if (operand[0] == '-') ssBuffer << "1";
+    else ssBuffer << "0";
+    ssBuffer << setfill('0') << setw(4) << nSystems.decToBinComplement2(operand.substr(0, operand.find(','))) << endl;
+    result << setfill('0') << setw(2) << uppercase << nSystems.binToHex(ssBuffer.str());
+  }
+  else if (am == "IDX1" || am == "IDX2") {
+    stringBuffer = operand.substr(operand.find(',') + 1);
+    ssBuffer << 111 << idxRegs[stringBuffer] << 0;
+    if (am == "IDX1") {
+      if (operand[0] == '-') ssBuffer << "01";
+      else ssBuffer << "00";
+      result << setfill('0') << setw(2) << uppercase << nSystems.binToHex(ssBuffer.str()) << " ";
+      result << setfill('0') << setw(2) << uppercase << nSystems.decToHex(operand.substr(0, operand.find(',')));
+    }
+    else {
+      if (operand[0] == '-') ssBuffer << "11";
+      else ssBuffer << "10";
+      result << setfill('0') << setw(2) << uppercase << nSystems.binToHex(ssBuffer.str()) << " ";
+      result << setfill('0') << setw(4) << uppercase << nSystems.decToHex(operand.substr(0, operand.find(',')));
+    }
+  }
+  else if (am == "[D,IDX]") {
+    return objectCode;
+  }
+  else if (am == "[IDX2]") {
+    if (operand[1] == '-') return "FDR";
+    stringBuffer = operand.substr(operand.find(',') + 1);
+    ssBuffer << "111" << idxRegs[stringBuffer.substr(0, stringBuffer.length() - 1)] << "011";
+    result << setfill('0') << setw(2) << uppercase << nSystems.binToHex(ssBuffer.str()) << " ";
+    result << setfill('0') << setw(4) << uppercase << nSystems.decToHex(operand.substr(1, operand.find(',')));
   }
   else {
     result.str(objectCode);
@@ -492,18 +528,18 @@ void Assembler::assemble(string iFileName)
   iFile.close();
   tabsimFile.close();
   //* -------- ------- ------ ----- Second Stage ----- ------ ------- --------
-  // iFile.open("aux.lst", ios::in);
+  iFile.open("aux.lst", ios::in);
 
-  // fileName = iFileName.substr(0, iFileName.find(".")) + ".lst";
-  // myFileManager.createFile(fileName);
-  // file.open(fileName, ios::in | ios::out);
+  fileName = iFileName.substr(0, iFileName.find(".")) + ".lst";
+  myFileManager.createFile(fileName);
+  file.open(fileName, ios::in | ios::out);
 
-  // secondStage(iFile, file);
+  secondStage(iFile, file);
 
-  // iFile.close();
-  // file.close();
-  // tabsimFile.close();
+  iFile.close();
+  file.close();
+  tabsimFile.close();
 
-  // remove("aux.lst");
+  remove("aux.lst");
 
 }
