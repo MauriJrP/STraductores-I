@@ -227,22 +227,42 @@ std::string Assembler::calculateObjectCode(string objectCode, string sourceForm,
   }
   else if (am == "REL8" || am == "REL9") {
     intBuffer = decOperand - actualAddress;
-    if (am == "REL9") { // only for mnemonic DBEQ at the moment
-      if (intBuffer >= 0) {
-        if (reg == "A") result << "00 ";
-        else if (reg == "B") result << "01 ";
-        else if (reg == "D") result << "04 ";
-        else if (reg == "X") result << "05 ";
-        else if (reg == "Y") result << "06 ";
-        else if (reg == "SP") result << "07 ";
+    if (am == "REL9") { // only for mnemonic DBEQ & IBNE at the moment
+      if (sourceForm == "DBEQ") {
+        if (intBuffer >= 0) {
+          if (reg == "A") result << "00 ";
+          else if (reg == "B") result << "01 ";
+          else if (reg == "D") result << "04 ";
+          else if (reg == "X") result << "05 ";
+          else if (reg == "Y") result << "06 ";
+          else if (reg == "SP") result << "07 ";
+        }
+        else {
+          if (reg == "A") result << "10 ";
+          else if (reg == "B") result << "11 ";
+          else if (reg == "D") result << "14 ";
+          else if (reg == "X") result << "15 ";
+          else if (reg == "Y") result << "16 ";
+          else if (reg == "SP") result << "17 ";
+        }
       }
-      else {
-        if (reg == "A") result << "10 ";
-        else if (reg == "B") result << "11 ";
-        else if (reg == "D") result << "14 ";
-        else if (reg == "X") result << "15 ";
-        else if (reg == "Y") result << "16 ";
-        else if (reg == "SP") result << "17 ";
+      else if (sourceForm == "IBNE") {
+        if (intBuffer >= 0) {
+          if (reg == "A") result << "A0 ";
+          else if (reg == "B") result << "A1 ";
+          else if (reg == "D") result << "A4 ";
+          else if (reg == "X") result << "A5 ";
+          else if (reg == "Y") result << "A6 ";
+          else if (reg == "SP") result << "A7 ";
+        }
+        else {
+          if (reg == "A") result << "B0 ";
+          else if (reg == "B") result << "B1 ";
+          else if (reg == "D") result << "B4 ";
+          else if (reg == "X") result << "B5 ";
+          else if (reg == "Y") result << "B6 ";
+          else if (reg == "SP") result << "B7 ";
+        }
       }
     }
     ssBuffer << setfill('0') << setw(2) << hex << uppercase << intBuffer;
