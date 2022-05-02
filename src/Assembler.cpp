@@ -422,6 +422,8 @@ void Assembler::firstStage(ifstream& iFile, fstream& file, fstream& tabsimFile) 
         }
         catch (const std::exception& e)
         {
+          cout << "operand: <" << operand << "> | ";
+          cout << "AddressMode: <" << mnemonics[sourceForm].getAddressMode(operand) << ">" << endl;
           file << "{" << mnemonics[sourceForm].getObjectCode(mnemonics[sourceForm].getAddressMode(operand)) << "} ";
         }
 

@@ -8,6 +8,9 @@ MnemAModes::MnemAModes() : Mnemonic("")
   idxRegs.insert("Y");
   idxRegs.insert("SP");
   idxRegs.insert("PC");
+  idxRegs.insert("A");
+  idxRegs.insert("B");
+  idxRegs.insert("D");
 }
 
 MnemAModes::MnemAModes(std::string n, std::unordered_map<std::string, std::string> am) : Mnemonic(n), addressModes(am)
@@ -46,9 +49,9 @@ std::string MnemAModes::getAddressMode(std::string opr)
   string strBuffer{ "" };
   if (intBuffer != -1 && addressModes.find("IDX") != addressModes.end()) {
     strBuffer = opr.substr(0, intBuffer);
-    if (strBuffer[0] == '[' && idxRegs.count(strBuffer.substr(1)) != -1) return "[D,IDX]"; // F6
+    if (strBuffer[0] == '[' && idxRegs.count(strBuffer.substr(1)) != 0) return "[D,IDX]"; // F6
     else if (strBuffer[0] == '[') return "[IDX2]"; // F3
-    else if (idxRegs.count(strBuffer) != -1 || intBuffer == 0 || (stoi(strBuffer) >= -16 && stoi(strBuffer) <= 15)) return "IDX"; // F1 and F5
+    else if (idxRegs.count(strBuffer) != 0 || intBuffer == 0 || (stoi(strBuffer) >= -16 && stoi(strBuffer) <= 15)) return "IDX"; // F1 and F5
     else if ((stoi(strBuffer) >= -256 && stoi(strBuffer) <= 255) || intBuffer == 0) return "IDX1"; // F2
     else if ((stoi(strBuffer) >= -32768 && stoi(strBuffer) <= 65535) || intBuffer == 0) return "IDX2"; // F2
   }
