@@ -203,6 +203,7 @@ std::string Assembler::calculateObjectCode(string objectCode, string sourceForm,
   string substract{ "" };
   int decOperand{ 0 }; // operand value in decimal
   int intBuffer{ 0 };
+  cout << "sourceForm: " << sourceForm << " | operand: " << operand << " | am: " << am << endl;
 
   //* -------- ------- ------ ----- Separate operand in decOperand and register ----- ------ ------- --------
   if (am.find("IDX") == -1) {
@@ -303,18 +304,21 @@ std::string Assembler::calculateObjectCode(string objectCode, string sourceForm,
   }
   else if (am == "IDX1" || am == "IDX2") {
     stringBuffer = operand.substr(operand.find(',') + 1);
+    // cout << "IDX1/2: " << operand << " -> <" << stringBuffer << ">" << endl;
     ssBuffer << 111 << idxRegs[stringBuffer] << 0;
     if (am == "IDX1") {
       if (operand[0] == '-') ssBuffer << "01";
       else ssBuffer << "00";
       result << setfill('0') << setw(2) << uppercase << nSystems.binToHex(ssBuffer.str()) << " ";
-      result << setfill('0') << setw(2) << uppercase << nSystems.decToHex(operand.substr(0, operand.find(',')));
+      if (operand[0] == '-') result << uppercase << nSystems.decToHex(operand.substr(0, operand.find(','))).substr(6);
+      else result << setfill('0') << setw(2) << uppercase << nSystems.decToHex(operand.substr(0, operand.find(',')));
     }
     else {
       if (operand[0] == '-') ssBuffer << "11";
       else ssBuffer << "10";
       result << setfill('0') << setw(2) << uppercase << nSystems.binToHex(ssBuffer.str()) << " ";
-      result << setfill('0') << setw(4) << uppercase << nSystems.decToHex(operand.substr(0, operand.find(',')));
+      if (operand[0] == '-') result << uppercase << nSystems.decToHex(operand.substr(0, operand.find(','))).substr(6);
+      else result << setfill('0') << setw(4) << uppercase << nSystems.decToHex(operand.substr(0, operand.find(',')));
     }
   }
   else if (am == "[D,IDX]") {
@@ -328,13 +332,15 @@ std::string Assembler::calculateObjectCode(string objectCode, string sourceForm,
     stringBuffer = operand.substr(operand.find(',') + 1);
     ssBuffer << "111" << idxRegs[stringBuffer.substr(0, stringBuffer.length() - 1)] << "011";
     result << setfill('0') << setw(2) << uppercase << nSystems.binToHex(ssBuffer.str()) << " ";
-    result << setfill('0') << setw(4) << uppercase << nSystems.decToHex(operand.substr(1, operand.find(',')));
+    if (operand[0] == '-') result << uppercase << nSystems.decToHex(operand.substr(0, operand.find(','))).substr(6);
+    else result << setfill('0') << setw(4) << uppercase << nSystems.decToHex(operand.substr(1, operand.find(',')));
   }
   else {
     result.str(objectCode);
     // cout << "Source form: " << sourceForm << " | Address Mode: " << am << endl;
   }
 
+  cout << result.str() << endl;
   return result.str();
 }
 
@@ -422,8 +428,8 @@ void Assembler::firstStage(ifstream& iFile, fstream& file, fstream& tabsimFile) 
         }
         catch (const std::exception& e)
         {
-          cout << "operand: <" << operand << "> | ";
-          cout << "AddressMode: <" << mnemonics[sourceForm].getAddressMode(operand) << ">" << endl;
+          // cout << "operand: <" << operand << "> | ";
+          // cout << "AddressMode: <" << mnemonics[sourceForm].getAddressMode(operand) << ">" << endl;
           file << "{" << mnemonics[sourceForm].getObjectCode(mnemonics[sourceForm].getAddressMode(operand)) << "} ";
         }
 
@@ -503,6 +509,7 @@ void Assembler::secondStage(std::ifstream& iFile, std::fstream& file) {
     else if (addressMode == "REL16") actualAddress += 4;
 
     //* -------- ------- ------ ----- Calculate operation code ----- ------ ------- --------
+    // cout << "sourceForm: " << sourceForm << " | operand: " << operand << " | addressMode: " << addressMode << endl;
     if (operand != "") objectCode = calculateObjectCode(objectCode, sourceForm, operand, addressMode, actualAddress);
 
     //* -------- ------- ------ ----- Write to file ----- ------ ------- --------
