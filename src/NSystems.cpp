@@ -24,7 +24,30 @@ std::string NSystems::binToHex(std::string num)
 }
 
 // function that converts a decimal number to binary in complement 2
-std::string NSystems::decToBinComplement2(std::string num)
+
+// function that gets two's complement
+std::string NSystems::decToBinComplement2(std::string num) {
+  stringstream binNumBuffer{ "" };
+  binNumBuffer << setfill('0') << setw(5) << decToBin(num);
+  string binNum = binNumBuffer.str();
+  cout << "binNum: " << binNum << endl;
+  bool flag = false;
+  int length = binNum.length() - 1;
+  for (int i = length; i >= 0; i--) {
+    if (!flag) {
+      if (binNum[i] == '0') continue;
+      else flag = true;
+    }
+    else {
+      if (binNum[i] == '0') binNum[i] = '1';
+      else binNum[i] = '0';
+    }
+  }
+  return binNum;
+}
+
+
+std::string NSystems::decToBin(std::string num)
 {
   int intNum = stoi(num);
   string binNum = "";

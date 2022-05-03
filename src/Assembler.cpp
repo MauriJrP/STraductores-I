@@ -288,7 +288,8 @@ std::string Assembler::calculateObjectCode(string objectCode, string sourceForm,
   else if (am == "IDX") {
     stringBuffer = operand.substr(operand.find(',') + 1);
     // cout << "Source form: " << sourceForm << " Operand: " << operand << " Register: " << operand.substr(0, operand.find(',')) << endl;
-    if (idxRegs.count(operand.substr(0, operand.find(','))) != -1) { // F5
+    if (idxRegs.count(operand.substr(0, operand.find(','))) != 0) { // F5
+      cout << "F5" << endl;
       ssBuffer << "111" << idxRegs[stringBuffer] << "1";
       if (operand.substr(0, operand.find(',')) == "A") ssBuffer << "00";
       if (operand.substr(0, operand.find(',')) == "B") ssBuffer << "01";
@@ -296,10 +297,17 @@ std::string Assembler::calculateObjectCode(string objectCode, string sourceForm,
     }
     else { // F1
       ssBuffer << idxRegs[stringBuffer] << 0;
-      if (operand[0] == '-') ssBuffer << "1";
-      else ssBuffer << "0";
-      ssBuffer << setfill('0') << setw(4) << nSystems.decToBinComplement2(operand.substr(0, operand.find(','))) << endl;
+      if (operand[0] == '-') {
+        ssBuffer << "1";
+        ssBuffer << setfill('0') << setw(4) << nSystems.decToBinComplement2(operand.substr(1, operand.find(',') - 1)).substr(1) << endl;
+        cout << nSystems.decToBinComplement2(operand.substr(1, operand.find(',') - 1)) << endl;
+      }
+      else {
+        ssBuffer << "0";
+        ssBuffer << setfill('0') << setw(4) << nSystems.decToBin(operand.substr(0, operand.find(','))) << endl;
+      }
     }
+    cout << ssBuffer.str() << endl;
     result << setfill('0') << setw(2) << uppercase << nSystems.binToHex(ssBuffer.str());
   }
   else if (am == "IDX1" || am == "IDX2") {
@@ -340,7 +348,7 @@ std::string Assembler::calculateObjectCode(string objectCode, string sourceForm,
     // cout << "Source form: " << sourceForm << " | Address Mode: " << am << endl;
   }
 
-  cout << result.str() << endl;
+  // cout << result.str() << endl;
   return result.str();
 }
 
